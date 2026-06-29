@@ -1,3 +1,7 @@
+<?php
+$num = isset($_REQUEST["num"])? $_REQUEST["num"] : "";
+$memo = isset($_REQUEST["memo"])? $_REQUEST["memo"] : "";
+?>
 <html>
 <head>
 <title>Search ZipCode</title>
@@ -5,7 +9,6 @@
 <link rel="stylesheet" href="style.css" type="text/css">
 
 <script>
-<!--
 function postaddr(var1)
 {
 <?php if($num==1){?>
@@ -15,18 +18,20 @@ function postaddr(var1)
 <?php }?>
  window.close();
 }
--->
 </script>
 
 </head>
 
-<body bgcolor=white leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<body bgcolor="white" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
 
 <?php
- echo urldecode(stripslashes($_POST['memo']));
+echo htmlspecialchars($memo);
 ?>
 <br>
-<div align=center><a href=# onclick=history.go(-2)><font color=black>뒤로가기</a> <font color=bbbbbb>|</font> <a href=# onclick=window.close()><font color=black>창 닫기</a>
+<div align="center">
+<a href="#" onclick="history.go(-2)"><font color="black">뒤로가기</font></a> 
+<font color="bbbbbb">|</font>
+<a href="#" onclick="window.close()"><font color="black">창 닫기</font></a>
 
 
 </body>

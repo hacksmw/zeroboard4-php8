@@ -11,14 +11,14 @@
     if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
 
     // 에러 표시 설정    
-    ini_set('display_errors', '0');
-    require "fixcloudflare.php";
+    @ini_set('display_errors', '0');
+    require_once "fixcloudflare.php";
 
     // W3C P3P 규약설정
-    header('P3P: CP="ALL CURa ADMa DEVa TAIa OUR BUS IND PHY ONL UNI PUR FIN COM NAV INT DEM CNT STA POL HEA PRE LOC OTC"');
+    @header('P3P: CP="ALL CURa ADMa DEVa TAIa OUR BUS IND PHY ONL UNI PUR FIN COM NAV INT DEM CNT STA POL HEA PRE LOC OTC"');
 
 	// 현재 버젼
-    	$zb_version = "4.1 pl8";
+   	$zb_version = "4.1 pl8";
 	$zb_php8_version = 'php8-0.1';
 
 	/*******************************************************************************
@@ -29,48 +29,123 @@
  	$ext_arr = array('PHP_SELF', '_ENV', '_GET', '_POST', '_FILES', '_SERVER', '_COOKIE', '_SESSION', '_REQUEST',
                   	'HTTP_ENV_VARS', 'HTTP_GET_VARS', 'HTTP_POST_VARS', 'HTTP_POST_FILES', 'HTTP_SERVER_VARS',
                	    'HTTP_COOKIE_VARS', 'HTTP_SESSION_VARS', 'GLOBALS');
+	
 	$filterxssval = array('name', 'email', 'homepage', 'subject', 'memo', 'keyword', 'user_id',
 					'birth_1', 'birth_2', 'birth_3', 'sitelink1', 'sitelink2', 'icq', 'aol', 'msn', 'hobby', 'job',
 					'home_address', 'home_tel', 'office_address', 'office_tel', 'handphone', 'comment');
- 	$ext_cnt = count($ext_arr);
- 	for($i=0; $i<$ext_cnt; $i++) {
+					
+	// 중요한 변수를 덮어씌우는 것을 방지
+	$ext_cnt = count($ext_arr);
+	for($i=0; $i<$ext_cnt; $i++) {
  	 	if (isset($_GET[$ext_arr[$i]]))  unset($_GET[$ext_arr[$i]]);
-     	 	if (isset($_POST[$ext_arr[$i]])) unset($_POST[$ext_arr[$i]]);
+     	if (isset($_POST[$ext_arr[$i]])) unset($_POST[$ext_arr[$i]]);
  	}
+	
+	// XSS 방지
 	foreach($filterxssval as $val) {
 		if(in_array($val, array_keys($_GET))) $_GET[$val] = xss2($_GET[$val]);
 		if(in_array($val, array_keys($_POST))) $_POST[$val] = xss2($_POST[$val]);
 	}
 	
+	// 필터링
  	$_GET = array_map('Request_Var', $_GET);
- 	zb_gpc_extract($_GET);
+
+	// SQL Injection 방지
+	$_POST    = array_map_deep("addslashes",  $_POST);
+	$_GET     = array_map_deep("addslashes",  $_GET);
+	$_COOKIE  = array_map_deep("addslashes",  $_COOKIE);
+	
+	// 사용자 입력이 $_zb_path를 덮어쓰지 않도록 처리
+	if (isset($_REQUEST["_zb_path"])) {
+		unset($_GET["_zb_path"]);
+		unset($_POST["_zb_path"]);
+		unset($_COOKIE["_zb_path"]);
+	}
+
+	// 사용자 입력이 $_zb_url을 덮어쓰지 않도록 처리
+	if (isset($_REQUEST["_zb_url"])) {
+		unset($_GET["_zb_url"]);
+		unset($_POST["_zb_url"]);
+		unset($_COOKIE["_zb_url"]);
+	}
+
+	// 사용자 입력이 $dir을 덮어쓰지 않도록 처리
+	if (isset($_REQUEST["dir"])) {
+		unset($_GET["dir"]);
+		unset($_POST["dir"]);
+		unset($_COOKIE["dir"]);
+	}
+	
+	// 요청 파라미터를 전역변수화
+	zb_gpc_extract($_GET);
  	zb_gpc_extract($_POST);
- 	zb_gpc_extract($_COOKIE);
+	
+	// $_SERVER을 전역변수화
  	$PHP_SELF = $_SERVER['PHP_SELF'];
  	$HTTP_HOST = $_SERVER['HTTP_HOST'];
- 	if(isset($_SERVER['HTTP_REFERER'])) $HTTP_REFERER = $_SERVER['HTTP_REFERER']; else $HTTP_REFERER = "";
+ 	if (isset($_SERVER['HTTP_REFERER'])) $HTTP_REFERER = $_SERVER['HTTP_REFERER']; else $HTTP_REFERER = "";
  	$REMOTE_ADDR = $_SERVER['REMOTE_ADDR'];
  	$HTTP_USER_AGENT = $_SERVER['HTTP_USER_AGENT'];
  	$REQUEST_METHOD = $_SERVER['REQUEST_METHOD'];
  	$REQUEST_URI = $_SERVER['REQUEST_URI'];
 
- 	if(isset($page)) $page = (int)$page;
-
+	// page 파라미터를 올바르게 처리
+	if (isset($_REQUEST["page"])) {
+		$page = $_REQUEST["page"];
+		if (!$page) {
+			unset($page);
+		} else {
+			$page = (int)$page;			
+		}
+	} else {
+		unset($page);
+	}
+	
+	// 설정 디렉토리를 구함
 	$temp_filename=realpath(__FILE__);
-	if($temp_filename) $config_dir=str_replace("lib.php","",$temp_filename);
+	if ($temp_filename) $config_dir=str_replace("lib.php","",$temp_filename);
 	else $config_dir="";
+	
+	// 현재시간을 구함
 	$now_time = time();
-
+	
 	/*******************************************************************************
- 	 * 기본 변수 초기화. (php의 오류같지 않은 오류 때문에;; ㅡㅡ+)
+ 	 * 기본 변수 초기화. (파라미터 인젝션 방지)
  	 ******************************************************************************/
 	unset($member);
 	unset($group);
 	unset($setup);
-	unset($s_que);
-        if(isset($select_arrange)) $select_arrange = str_replace(array("'",'"','\\'),'',$select_arrange);
-        if(!in_array($select_arrange,array('headnum','subject','name','hit','vote','reg_date','download1','download2'))) unset($select_arrange);
-        if(isset($desc)) if(!in_array($desc,array('desc','asc'))) unset($desc);
+	unset($connect);
+	unset($total_member_connect);
+	unset($total_guest_connect);
+
+	// 정렬 매개변수가 올바른지 처리
+
+	if (isset($_REQUEST['select_arrange'])) {
+		$select_arrange = $_REQUEST['select_arrange'];
+		if (!$select_arrange) {
+			unset($select_arrange);
+		} else {
+			if (!in_array($select_arrange,array('headnum','subject','name','hit','vote','reg_date','download1','download2'))) 
+				unset($select_arrange);
+		}
+	} else {
+		unset($select_arrange);
+	}
+
+	// 오람츠순 내림차순 매개변수가 올바른지 처리	
+	if (isset($_REQUEST["desc"])) {
+		$desc = $_REQUEST["desc"];
+		if (!$desc) {
+			unset($desc);
+		} else {
+			if(!in_array($desc,array('desc','asc'))) {
+				unset($desc);
+			}			
+		}
+	} else {
+		unset($desc);
+	}
 
 	/*******************************************************************************
  	 * include 되었는지를 검사
@@ -78,7 +153,7 @@
 	if(defined("_zb_lib_included")) return;
     define("_zb_lib_included",true);
 
-	$_startTime=getmicrotime();
+	$_startTime = getmicrotime();
 
 	/*******************************************************************************
  	 * 기본 설정 파일을 읽음
@@ -88,7 +163,8 @@
 	/*******************************************************************************
  	 * install 페이지가 아닌 경우
  	 ******************************************************************************/
-	if(strpos(strtolower($PHP_SELF),"install") === false &&file_exists($_zb_path."config.php")) {
+	 
+	if (strpos(strtolower($PHP_SELF), "install") === false && file_exists($_zb_path."config.php")) {
 
  	 	//세션 처리 (세션은 3일동안 유효하게 설정)
 		if(!is_dir($_zb_path.$_zbDefaultSetup['session_path'])) {
@@ -102,6 +178,7 @@
 		if(!is_writable($_zb_path.$_zbDefaultSetup['session_path'])) error("세션 디렉토리(".$_zb_path.$_zbDefaultSetup['session_path'].")의 쓰기 권한이 없습니다<br>제로보드를 사용하기 위해서는 세션디렉토리의 쓰기 권한이 있어야 합니다");
 
 		$_sessionStart = getmicrotime();
+		
 		@session_save_path($_zb_path.$_zbDefaultSetup['session_path']);
 		@session_cache_limiter('nocache, must_revalidate');
 		@ini_set("session.gc_maxlifetime", "18000");
@@ -126,10 +203,14 @@
 				$_SESSION['zb_vote'] = '';
 			}
 		}
+		
 		// 자동 로그인일때 제대로 된 자동 로그인인지 체크하는 부분
-		unset($autoLoginData);
+		
 		$autoLoginData = getZBSessionID();
-		if(isset($autoLoginData['no'])) {
+		
+		// 자동 로그인 데이터가 있으면 로그인
+		if (isset($autoLoginData['no'])) {
+			
 			$zb_logged_no=$autoLoginData['no'];
 			$zb_logged_ip=$_SERVER['REMOTE_ADDR'];
 			$zb_logged_time=time();
@@ -138,14 +219,14 @@
 			$_SESSION['zb_logged_time'] = $zb_logged_time;
 
 		// 세션 값을 체크하여 로그인을 처리
-		} elseif(isset($_SESSION['zb_logged_no'])) {
+		} else if (isset($_SESSION['zb_logged_no'])) {
 
 			// 로그인 시간이 지정된 시간을 넘었거나 로그인 아이피가 현재 사용자의 아이피와 다를 경우 로그아웃 시킴
 			if(time()-intval($_SESSION['zb_logged_time'])>$_zbDefaultSetup['login_time']||$_SESSION['zb_logged_ip']!=$_SERVER['REMOTE_ADDR']) {
 
 				$_SESSION['zb_logged_no'] = '';
-			$_SESSION['zb_logged_ip'] = '';
-			$_SESSION['zb_logged_time'] = '';
+				$_SESSION['zb_logged_ip'] = '';
+				$_SESSION['zb_logged_time'] = '';
 				unset($_SESSION['zb_logged_no'],$_SESSION['zb_logged_ip'],$_SESSION['zb_logged_time']);
 				session_destroy();
 
@@ -159,8 +240,11 @@
 		}
 
 		// 현재 접속자의 데이타를 체크하여 파일로 저장 (회원, 비회원으로 구분해서 저장)
+		
 		$_nowConnectStart = getmicrotime();
+		
 		if($_zbDefaultSetup['nowconnect_enable']=="true") {
+
 			$_zb_now_check_intervalTime = isset($_SESSION['zb_last_connect_check']) ? time()-$_SESSION['zb_last_connect_check'] : time();
 
 			if(!isset($_SESSION['zb_last_connect_check'])||$_zb_now_check_intervalTime>$_zbDefaultSetup['nowconnect_refresh_time']) {
@@ -186,15 +270,14 @@
 	}
 
 	$_nowConnectEnd = getmicrotime();
-
 	
 	// 익스와 넷스케이프일때 처리
 	if(strpos($HTTP_USER_AGENT,"MSIE") !== false) $browser="1"; else $browser="0";
 
 
 	// DB가 설정이 되었는지를 검사
-	if(!file_exists($config_dir."config.php")&&strpos(strtolower($PHP_SELF),"install") === false) {
- 		echo"<meta http-equiv=\"refresh\" content=\"0; url=install.php\">";
+	if(!file_exists($config_dir."config.php") && strpos(strtolower($PHP_SELF),"install") === false) {
+		header("Location: install.php");
  		exit;
 	}
 
@@ -289,22 +372,22 @@
 			$query=zb_query("select * from $member_table where no ='".$_SESSION['zb_logged_no']."'");
 			$member=mysql_fetch_array($query);
 			if(mysql_num_rows($query) < 1) {
-			session_destroy();
-			unset($member,$_SESSION['zb_logged_no'],$_SESSION['zb_logged_ip'],$_SESSION['zb_logged_time'],$_SESSION['zb_hash']);
-			$member['level'] = 10;
-			} else {
-			$zb_hash_chk = md5($member['reg_m_date'].$member['user_id'].$member['no'].$_SERVER['REMOTE_ADDR'].$_SERVER['HTTP_USER_AGENT']);
-			
-			if($_SESSION['zb_hash'] != $zb_hash_chk)
-			{
 				session_destroy();
 				unset($member,$_SESSION['zb_logged_no'],$_SESSION['zb_logged_ip'],$_SESSION['zb_logged_time'],$_SESSION['zb_hash']);
 				$member['level'] = 10;
-			}
-		} 
-	} else $member['level'] = 10;
-	return $member;
-}
+			} else {
+				$zb_hash_chk = md5($member['reg_m_date'].$member['user_id'].$member['no'].$_SERVER['REMOTE_ADDR'].$_SERVER['HTTP_USER_AGENT']);
+			
+				if($_SESSION['zb_hash'] != $zb_hash_chk)
+				{
+					session_destroy();
+					unset($member,$_SESSION['zb_logged_no'],$_SESSION['zb_logged_ip'],$_SESSION['zb_logged_time'],$_SESSION['zb_hash']);
+					$member['level'] = 10;
+				}
+			} 
+		} else $member['level'] = 10;
+		return $member;
+	}
 
 
 	function group_info($no) {
@@ -319,10 +402,10 @@
 	// MySQL 데이타 베이스에 접근
 	function dbconn() {
 
-		global $connect, $config_dir, $autologin, $_dbconn_is_included;
+		global $connect, $config_dir;
 
-		if($_dbconn_is_included) return;
-		$_dbconn_is_included = true;
+		if(defined("_dbconn_is_included")) return;
+		define("_dbconn_is_included", true);
 
 		$f=@file($config_dir."config.php") or Error("config.php파일이 없습니다.<br>DB설정을 먼저 하십시요","install.php");
 
@@ -368,35 +451,34 @@
 		if(@file_exists($dir.$no.".gif")) return $dir.$no.".gif";
 	}
 
-
 	// 이름 앞에 붙는 얼굴 아이콘
 	function get_face($data, $check=0) {
 		global $group;
 		$face_image='';
 		// 이름앞에 붙는 아이콘 정의;;
-		if($group['use_icon']==0) {
+		if($group['use_icon'] == 0) {
 			if($data['ismember']) { 
 				if($data['islevel']==2) $face_image="<img src=images/admin2_face.gif border=0 align=absmiddle>";
-				elseif($data['islevel']==1) $face_image="<img src=images/admin1_face.gif border=0 align=absmiddle>";
+				else if ($data['islevel']==1) $face_image="<img src=images/admin1_face.gif border=0 align=absmiddle>";
 				else {
 					if($group['icon']) $face_image="<img src=icon/$group[icon] border=0 align=absmiddle>";
 					else $face_image="<img src=images/member_face.gif border=0 align=absmiddle>";
 				}
-			} 
-			else $face_image="<img src=images/blank_face.gif border=0 align=absmiddle> ";
+			} else {
+				$face_image="<img src=images/blank_face.gif border=0 align=absmiddle> ";
+			}
 		}
 
 		$temp_name = get_private_icon($data['ismember'], "1");
 		if($temp_name) $face_image="<img src='$temp_name' border=0 align=absmiddle>";
 	
-		if($group['use_icon']<2&&$data['ismember']) $face_image .= "<b>";
+		if($group['use_icon']<2 && $data['ismember']) $face_image .= "<b>";
 
 		//if($data['ismember']&&$data['parent']) $face_image="<b>";
 		//elseif($data['parent']) $face_image="";
 	
 		return $face_image;
 	}
-
 
 	// 게시판 관리자인지 체크하는 부분
 	function check_board_master($member, $board_num) {
@@ -412,13 +494,13 @@
 	//  초기 헤더를 뿌려주는 부분;;;;
 	function head($body="",$scriptfile="") {
 
-		global $group, $setup, $dir,$member, $PHP_SELF, $id, $_head_executived, $width;
+		global $group, $setup, $member, $PHP_SELF, $id, $width, $dir;
 
-		if($_head_executived) return;
-		$_head_executived = true;
+		if(defined("_head_executived")) return;
+		define("_head_executived", true);
 
-		if(file_exists('license.txt')) {
-			$license = file_get_contents('license.txt');
+		if (file_exists('license.txt')) {
+			$license = @file_get_contents('license.txt');
 			print "<!--\n".$license."\n-->\n";
 		}
 	
@@ -431,43 +513,59 @@
 		}
 		
 		// html 시작부분 출력
-		if(isset($setup) && $setup['skinname']) {
+		if(isset($setup) && isset($setup['skinname']) && $setup['skinname']) {
 			?>
-<html> 
+<html lang="ko">
 <head>
-	<title><?=$setup['title']?></title>
-	<meta http-equiv=Content-Type content=text/html; charset=utf-8>
-	<link rel=StyleSheet HREF=<?=$stylefile?> type=text/css title=style>
-	<?php if($setup['use_formmail']) echo $zbLayerScript;?>
-	<?php if($scriptfile) include "script/".$scriptfile;?>
+<?php
+	if (isset($setup) && isset($setup['title']) && $setup['title']) {
+?>
+<title><?=htmlspecialchars($setup['title'])?></title>
+<?php
+	}
+?>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="<?=htmlspecialchars($stylefile)?>" type="text/css" title="style">
+<?php if(isset($setup)&&isset($setup['use_formmail'])&&$setup['use_formmail']) echo $zbLayerScript;?>
+
+<?php if($scriptfile) include "script/".$scriptfile;?>
 </head>
-<body topmargin='0'  leftmargin='0' marginwidth='0' marginheight='0' <?=$body?><?php
+<body topmargin="0" leftmargin="0" marginwidth="0" marginheight="0" <?=$body?><?php
+			if(isset($setup) && isset($setup['bg_color']) && $setup['bg_color']) echo ' bgcolor="'.htmlspecialchars($setup['bg_color']).'"';
+			if(isset($setup) && isset($setup['bg_image']) && $setup['bg_image']) echo ' background="'.htmlspecialchars($setup['bg_image']).'"';
 
-			if($setup['bg_color']) echo " bgcolor=".$setup['bg_color']." ";
-			if($setup['bg_image']) echo " background=".$setup['bg_image']." ";
+?>>
+<?php
+if(isset($group) && isset($group['header_url']) && $group['header_url']) { @include $group['header_url']; }
+if(isset($setup) && isset($setup['header_url']) && $setup['header_url']) { @include $setup['header_url']; }
+if(isset($group) && isset($group['header']) && $group['header']) echo ($group['header']);
+if(isset($setup) && isset($setup['header']) && $setup['header']) echo ($setup['header']);
+?>
 
-			?>>
-			<?php
-			if($group['header_url']) { @include $group['header_url']; }
-			if($setup['header_url']) { @include $setup['header_url']; }
-			if($group['header']) echo stripslashes($group['header']);
-			if($setup['header']) echo stripslashes($setup['header']);
-			?>
-			<table border=0 cellspacing=0 cellpadding=0 width=<?=$width?> height=1 style="table-layout:fixed;"><col width=100%></col><tr><td><img src=images/t.gif border=0 width=98% height=1 name=zb_get_table_width><br><img src=images/t.gif border=0 name=zb_target_resize width=1 height=1></td></tr></table>
-			<?php
-		} else {
+<table border="0" cellspacing="0" cellpadding="0" width="<?=((isset($width))? htmlspecialchars($width): '')?>" height="1" style="table-layout:fixed;">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tr>
+<td>
+<img src="images/t.gif" border="0" width="98%" height="1" name="zb_get_table_width"><br><img src="images/t.gif" border="0" name="zb_target_resize" width="1" height="1">
+</td>
+</tr>
+</table>
+<?php
+} else {
 
-			?>
-<html>
+?>
+<html lang="ko">
 <head>
-	<meta http-equiv=Content-Type content=text/html; charset=utf-8>
-	<link rel=StyleSheet HREF=style.css type=text/css title=style>
-	<?php if(isset($script)) echo $script; ?>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="style.css" type="text/css" title="style">
+<?php if(isset($script)) echo $script; ?>
 </head>
-<body topmargin='0'  leftmargin='0' marginwidth='0' marginheight='0' <?=$body?>>
-			<?php
-				if(isset($group) && $group['header_url']) { @include $group['header_url']; }
-				if(isset($group) && $group['header']) echo stripslashes($group['header']);
+<body topmargin="0" leftmargin="0" marginwidth="0" marginheight="0" <?=$body?>>
+<?php
+				if(isset($group) && isset($group['header_url']) && $group['header_url']) { @include $group['header_url']; }
+				if(isset($group) && isset($group['header']) && $group['header']) echo ($group['header']);
 		}
 
 	}
@@ -478,24 +576,31 @@
 	function foot() {
 
 		global $width, $group, $setup, $_startTime , $_queryTime , $_foot_executived, $_skinTime, $_sessionStart, $_sessionEnd, $_nowConnectStart, $_nowConnectEnd, $_dbTime, $_listCheckTime, $_zbResizeCheck;
+		
+		if(defined("_foot_executived")) return;
+		define("_foot_executived", true);
 
-		if($_foot_executived) return;
-		$_foot_executived = true;
+		$maker = "";
 
-		$maker_file=@file("skin/$setup[skinname]/maker.txt");
-		if(is_array($maker_file) && $maker_file[0]) $maker="/ skin by $maker_file[0]";
-		else $maker = "";
+		if (isset($setup) && isset($setup["skinname"]) && $setup["skinname"]) {
+			$maker_file=@file("skin/$setup[skinname]/maker.txt");			
 
-		if(isset($setup) && $setup['skinname']) {
+			if(is_array($maker_file) && isset($maker_file[0]) && $maker_file[0]) $maker = "/ skin by " . $maker_file[0];
+		}
+	
+
+
+		if(isset($setup) && isset($setup['skinname']) && $setup['skinname']) {
 			?>
 
-			<table border=0 cellpadding=0 cellspacing=0 height=20 width=<?=$width?>>
-			<tr>
-				<td align=right style=font-family:tahoma,굴림;font-size:8pt;line-height:150%;letter-spacing:0px>
-					<font style=font-size:7pt>Copyright 1999-<?=date("Y")?></font> <a href=https://github.com/juckdo/zeroboard4-php8 target=_blank onfocus=blur()><font style=font-family:tahoma,굴림;font-size:8pt;>Zeroboard</a> <?=$maker?>
-				</td>   
-			</tr>
-			</table>
+<table cellpadding="0" cellspacing="0" height="20" width="<?=htmlspecialchars($width)?>">
+<tr>
+<td align="right" style="font-family:tahoma,굴림;font-size:8pt;line-height:150%;letter-spacing:0px">
+<font style="font-size:7pt">Copyright 1999-<?=date("Y")?></font> <a href="https://github.com/juckdo/zeroboard4-php8" target="_blank" onfocus="blur()">
+<font style="font-family:tahoma,굴림;font-size:8pt;">Zeroboard</a> <?=$maker?>
+</td>   
+</tr>
+</table>
 
 			<?php
 			if($_zbResizeCheck) {
@@ -511,30 +616,31 @@
 						}
 					}
 				}
+				
 				window.onload = zb_img_check;
 			</script>
 
-			<?php
+<?php
 			}
 
-			if($setup['footer']) echo stripslashes($setup['footer']);
-			if($group['footer']) echo stripslashes($group['footer']);
-			if($setup['footer_url']) { @include $setup['footer_url']; }
-			if($group['footer_url']) { @include $group['footer_url']; }
-			?>
-
+			if(isset($setup) && isset($setup['footer']) && $setup['footer']) echo stripslashes($setup['footer']);
+			if(isset($group) && isset($group['footer']) && $group['footer']) echo stripslashes($group['footer']);
+			if(isset($setup) && isset($setup['footer']) && $setup['footer_url']) { @include $setup['footer_url']; }
+			if(isset($group) && isset($group['footer']) && $group['footer_url']) { @include $group['footer_url']; }
+?>
 </body>
 </html>
 			<?php
 			
 		} else {
 
-			if(isset($group) && $group['footer']) echo stripslashes($group['footer']);
-			if(isset($group) && $group['footer_url']) { @include $group['footer_url']; }
+			if(isset($group) && isset($group['footer']) && $group['footer']) echo ($group['footer']);
+			if(isset($group) && isset($group['footer_url']) && $group['footer_url']) { @include $group['footer_url']; }
 
 			?>
-			</body>
-			</html>
+				
+</body>
+</html>
 			<?php
 		}
 
@@ -616,10 +722,17 @@
 			$message=str_replace("<br>","\\n",$message);
 			$message=str_replace("\"","\\\"",$message);
 			?>
-			<script>
-				alert("<?=$message?>");
-				window.close();
-			</script>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+<script>
+alert("<?=$message?>");
+window.close();
+</script>
+</body>
+</html>	
 			<?php
 		} else {
 
@@ -635,8 +748,6 @@
 
 		}
 
-		if($connect) mysql_close($connect);
-
 		exit;
 	}
 
@@ -645,8 +756,16 @@
 	function get_table_attrib($id) {
 
 		global $connect, $admin_table;
+		
+		$id = addslashes($id);
 
-		$data=mysql_fetch_array(zb_query("select * from $admin_table where name='$id'",$connect));
+		$result = zb_query("select * from $admin_table where name='$id'",$connect);
+		
+		$data = mysql_fetch_array($result);
+		
+		if ($data === false) {
+			return false;
+		}
 
 		if($data['table_width']<=100) $data['table_width']=$data['table_width']."%"; 
 
@@ -754,23 +873,34 @@
 	function getZBSessionID() {
 		global $_zb_path, $_zbDefaultSetup;
 
-		if(isset($_COOKIE['ZBSESSIONID'])) $zbSessionID = $_COOKIE['ZBSESSIONID'];
+		if (isset($_COOKIE['ZBSESSIONID'])) {
+			$zbSessionID = $_COOKIE['ZBSESSIONID'];
+		}
 
-		if(!isset($zbSessionID)) return array();
+		// 세션아이디 값이 없으면 그냥 반환
+		if (!isset($zbSessionID)) return array();
+
+		// 세션아이디 값이 올바르지 않으면 지움
+		if (!ctype_alnum($zbSessionID)) {
+			$zbSessionID = "";
+		}
+		
 		$str = zReadFile($_zb_path.$_zbDefaultSetup['session_path']."/zbSessionID_".$zbSessionID.".php");
 
-		if(!$str) {
+		if (!$str) {
 			@setcookie("ZBSESSIONID", "", time()+60*60*24*365, "/");
 			return array();
 		}
 
 		$str = explode("\n",$str);
+		
+		$data = array();
 
 		$data['no'] = trim($str[1]);
 		$data['time'] = trim($str[2]);
 
 		$newZBSessionID = md5($data['no']."-^A-".$data['time']);
-
+		
 		if($newZBSessionID != $zbSessionID) {
 			@setcookie("ZBSESSIONID", "", time()+60*60*24*365, "/");
 			return array();
@@ -788,6 +918,7 @@
 	// 제로보드 자동 로그인 세션값을 만드는 함수
 	function makeZBSessionID($no) {
 		global $_zb_path, $_zbDefaultSetup;
+		
         $no = (int)$no;
 
 		$zbSessionID = md5($no."-^A-".time());
@@ -798,7 +929,6 @@
 
 		@setcookie("ZBSESSIONID", $zbSessionID, time()+60*60*24*365, "/");
 	}
-
 
 	// 제로보드 자동 로그인 세션값 파기시키는 함수
 	function destroyZBSessionID($no) {
@@ -816,15 +946,16 @@
 		$data = str_replace("*/?>","",$data);	
 		$data = explode("\n",$data);
 		$_c = count($data);
-		unset($defaultSetup);
+		$defaultSetup = array();
 		for($i=0;$i<$_c;$i++) {
-			if(strpos($data[$i],";") === false &&strlen(trim($data[$i]))) {
-				$tmpStr = explode("=",$data[$i]);
+			if (substr(trim($data[$i]), 0, 1) !== ";" && strlen(trim($data[$i]))) {
+				$tmpStr = explode("=",$data[$i], 2);
 				$name = trim($tmpStr[0]);
 				$value = trim($tmpStr[1]);
 				$defaultSetup[$name]=$value;
 			}
 		}
+				
 		if(!$defaultSetup['url']) $defaultSetup['url'] = $HTTP_HOST;
 		if(!$defaultSetup['sitename']) $defaultSetup['sitename'] = $HTTP_HOST;
 		if(!$defaultSetup['session_path']) $defaultSetup['session_path'] = "data/__zbSessionTMP";
@@ -848,6 +979,10 @@
  	 *****************************************************************************/
 	// 빈문자열 경우 1을 리턴
 	function isblank($str) {
+		if ($str === null) {
+			$str = '';
+		}
+		
 		$temp=str_replace("　","",$str);
 		$temp=str_replace("\n","",$temp);
 		$temp=strip_tags($temp);
@@ -863,7 +998,6 @@
 		if(preg_match("/[^0-9]/",$str)) return 0;
 		return 1;
 	}
-
 
 	function zero_script_conv($list,$str) {
 		$str=str_replace("<","&lt;",$str);
@@ -918,7 +1052,6 @@
 		$str = str_replace( "<", "&lt;",$str );
 		return $str;
 	}
-
 
 	// 주민등록번호 검사
 	function check_jumin($jumin) { 
@@ -1014,7 +1147,7 @@
 		$tar[] = "\\1";
 		$src[] = "/_HTTPAT_/";
 		$tar[] = "@";
-		if (!empty($is_admin) && isset($data['ismember']) && isset($member['no'])) { 
+		if (isset($is_admin) && !empty($is_admin) && isset($data['ismember']) && isset($member['no'])) { 
 			if ($is_admin && $data['ismember']!==$member['no']) { 
             	$src[] = "/(\<(embed|object|ruby)[^\>]*)\>?(\<\/(embed|object|ruby)\>)?/i";
             	$tar[] = "<div style=\"border:1px solid #dcbba3;padding: 6px;background-color: #f9f2ee;color: #bf0000;line-height: 160%\">보안문제로 인하여 관리자 아이디로는 이 게시물에 사용된 embed 또는 object 태그를 볼 수 없습니다.<br />확인하시려면 관리자 권한이 없는 다른 아이디로 접속하세요.</div>";
@@ -1043,17 +1176,17 @@
 		$pointtmp = '';
 		if($cut_size<=0) return $msg;
 		if(strpos(strtolower($msg),'[re]') !== false) $cut_size=$cut_size+4;
-		for($i=0;$i<$cut_size;$i++) if(ord($msg[$i])>127) $han++; else $eng++;
+		for($i=0;$i<$cut_size;$i++) if(ord(substr($msg, $i))>127) $han++; else $eng++;
 		$cut_size=$cut_size+(int)$han*0.6;
 		$point=1;
 		for ($i=0;$i<strlen($msg);$i++) {
 			if ($point>$cut_size) return $pointtmp."...";
-			if (ord($msg[$i])<=127) {
-				$pointtmp.= $msg[$i];
+			if (ord(substr($msg,$i))<=127) {
+				$pointtmp.= substr($msg, $i);
 				if ($point%$cut_size==0) return $pointtmp."..."; 
 			} else {
 				if ($point%$cut_size==0) return $pointtmp."...";
-				$pointtmp.=$msg[$i].$msg[++$i];
+				$pointtmp.=substr($msg,$i).substr($msg, ++$i);
 				$point++;
 			}
 			$point++;
@@ -1065,7 +1198,16 @@
 	// 페이지 이동 스크립트
 	function movepage($url) {
 		global $connect;
-		echo"<meta http-equiv=\"refresh\" content=\"0; url=$url\">";
+?>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv='refresh' content='0; url=<?=$url?>' />
+</head>
+<body>
+</body>
+</html>
+<?php
 		if(isset($connect)) mysql_close($connect);
 		exit;
 	}
@@ -1112,6 +1254,7 @@
 
 	// 지정된 디렉토리의 파일 정보를 구함
 	function get_dirinfo($path) {
+		$dir = array();
 
 		$handle=@opendir($path);
 		while($info = readdir($handle)) {
@@ -1252,9 +1395,14 @@
 		$query = preg_replace("#^select.*from.*where.*`?information_schema`?.*#i", "select 1", $query);
 		if ($conn != null) $connect = $conn;
 		if (!function_exists("mysql_query")) {
-			return @mysqli_query($connect, $query);
+			$result = @mysqli_query($connect, $query);
+			if ($result === null) {
+				return false;
+			}
+			return $result;
 		} else {
-			return @mysql_query($query);
+			$result = @mysql_query($query);
+			return $result;
 		}
 	}
 
@@ -1347,18 +1495,29 @@
 
 	function Request_Var($str) {
 		if(is_array($str)) return $str;
-		else return htmlspecialchars(str_replace(array("\r\n", "\r", "\0"), array("\n", "\n", ''), $str));
+		else return (htmlspecialchars(str_replace(array("\r\n", "\r", "\0"), array("\n", "\n", ''), $str)));
 	}
 	
-	function get_password($str, $isold=false) {
-		global $connect;
-		if($isold)
-			$rs = zb_query("SELECT old_password('$str')");
-		else
-			$rs = zb_query("SELECT password('$str')");
-		$tmp=mysql_fetch_array($rs);
-		mysql_free_result($rs);
-		return $tmp[0];
+	function get_password($str, $isold = false, $do_escape = false) {
+		if ($do_escape) {
+			$str = addslashes($str);
+		}
+		
+		$rs = zb_query("SELECT '$str'");
+		
+		$tmp = mysql_fetch_array($rs);
+		$tmp = $tmp[0];
+		
+		//$tmp = $str;
+		
+		if ($isold) {
+			$result = old_password($tmp);
+		}
+		else {
+			$result = password($tmp);
+		}
+		
+		return $result;
 	}
 	
 	// <input type=hidden name=csrf_token value=<?=generate_csrf_token() 방식으로 사용
@@ -1368,7 +1527,7 @@
 	}
 	
 	function check_csrf_token() {
-		if (!empty($_POST['csrf_token']) && ($_SESSION['csrf_token'] === $_POST['csrf_token'])) {
+		if (!empty(post('csrf_token')) && (ses('csrf_token') === post('csrf_token'))) {
 			unset($_SESSION['csrf_token']);
 			return true;
 		} else {
@@ -1378,6 +1537,8 @@
 	
 	function zb_gpc_extract($array)
 	{
+		global $GLOBALS;
+		
 		if(!is_array($array)) return false;
 		
 		$valid_variables = preg_replace("/^(GLOBALS|dir|_.*)$/i", '', array_keys($array));
@@ -1451,3 +1612,124 @@
             } while ($Temporary !== $data);
             return trim($data);
         }
+
+
+    function password($pw) {
+        return '*' . strtoupper(sha1(sha1($pw,true)));
+    }
+    
+    function old_password($password) {
+        if ($password == '')
+            return '';
+ 
+        $nr = 1345345333;
+        $add = 7;
+        $nr2 = 0x12345671;
+
+        foreach(str_split($password) as $c) {
+            if ($c == ' ' or $c == "\t")
+                continue;
+            $tmp = ord($c);
+            $nr ^= ((($nr & 63) + $add) * $tmp) + (($nr << 8) & 0xFFFFFFFF);
+            $nr2 += (($nr2 << 8) & 0xFFFFFFFF) ^ $nr;
+            $add += $tmp;
+        }
+ 
+        if ($nr2 > PHP_INT_MAX)
+            $nr2 += PHP_INT_MAX + 1;
+ 
+        $bit = (1 << 31) -1;
+ 
+        return sprintf("%08lx%08lx", $nr & $bit, $nr2 & $bit);
+    }
+	
+// multi-dimensional array에 사용자지정 함수적용
+function array_map_deep($fn, $array)
+{
+    if(is_array($array)) {
+        foreach($array as $key => $value) {
+            if(is_array($value)) {
+                $array[$key] = array_map_deep($fn, $value);
+            } else {
+                $array[$key] = call_user_func($fn, $value);
+            }
+        }
+    } else {
+        $array = call_user_func($fn, $array);
+    }
+
+    return $array;
+}
+
+function get($name) {
+	global $_GET;
+	if (isset($_GET[$name])) {
+		return $_GET[$name];
+	}
+	return null;
+}
+
+function post($name) {
+	global $_POST;
+	if (isset($_POST[$name])) {
+		return $_POST[$name];
+	}
+	return null;
+}
+
+function req($name) {
+	global $_REQUEST;
+	if (isset($_REQUEST[$name])) {
+		return $_REQUEST[$name];
+	}
+	return null;
+}
+
+function ses($name) {
+	global $_SESSION;
+	if (isset($_SESSION[$name])) {
+		return $_SESSION[$name];
+	}
+	return null;
+}
+
+function arr($arr, $key) {
+	if (isset($arr[$key])) {
+		return $arr[$key];
+	}
+	return null;
+}
+
+function fetch_array($result) {
+	if ($result === false) {
+		return array();
+	}
+	return mysql_fetch_array($result);
+}
+
+function xss($content) {
+	// Strip bad elements.
+	$content = preg_replace('/(<)(|\/)(\!|\?|html|head|title|meta|body|style|link|base|script'.
+	'|frameset|frame|noframes|applet|object|param|noscript|noembed|embed|basefont|xmp|plaintext|comment)/i',
+	'&lt;$2$3', $content);
+ 
+	// Strip script handlers.
+	$content = preg_replace_callback("/([^a-z])(o)(n)/i", 
+	create_function('$matches', 'if($matches[2]=="o") $matches[2] = "&#111;";
+	else $matches[2] = "&#79;"; return $matches[1].$matches[2].$matches[3];'), $content);
+
+	// Strip iframe sandbox.
+	$content = preg_replace_callback("/([^a-z])(s)(andbox)/i", 
+	create_function('$matches', 'if($matches[2]=="s") $matches[2] = "&#115;";
+	else $matches[2] = "&#83;"; return $matches[1].$matches[2].$matches[3];'), $content);
+
+	// Strip iframe srcdoc
+	$content = preg_replace_callback("/([^a-z])(s)(rcdoc)/i", 
+	create_function('$matches', 'if($matches[2]=="s") $matches[2] = "&#115;";
+	else $matches[2] = "&#83;"; return $matches[1].$matches[2].$matches[3];'), $content);
+
+	// Embed 태그 처리
+	$content = str_ireplace("<embed", '<embed allowscriptaccess="never"', $content);
+ 
+	return $content;	
+}

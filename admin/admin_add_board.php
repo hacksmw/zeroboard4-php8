@@ -1,4 +1,6 @@
 <?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
+
   if(!isset($no)) $no='';
   $group_data=mysql_fetch_array(zb_query("select * from $group_table where no='$group_no'"));
   if($exec2=="add") $data=mysql_fetch_array(zb_query("select * from $admin_table where no='$no'"));
@@ -39,7 +41,7 @@
 <tr bgcolor=bbbbbb height=30>
    <td align=right colspan=8 height=25 colspan=2 style=font-family:Tahoma;font-size:8pt;>
     그룹 이름 : <b><?=$group_data['name']?></b>&nbsp;&nbsp;&nbsp;</td>
-<form method=post action=<?=$PHP_SELF?> name=write onsubmit="return check_submit();">
+<form method=post action=<?=$PHP_SELF?> name=write onsubmit="return check_submit();" autocomplete="off">
 <input type=hidden name=no value=<?php if(isset($data['no'])) echo $data['no'];?>>
 <input type=hidden name=exec value=view_board>
 <input type=hidden name=exec2 value=<?php if($no) echo"modify_ok"; else echo"add_ok";?>>
@@ -381,7 +383,7 @@ function check2()
 <tr height=25 bgcolor=#e0e0e0>
   <td align=right style=font-family:Tahoma;font-size:8pt;><b>관리자 암호 입력&nbsp;</td>
   <td >&nbsp;&nbsp;
-     <input type=password  name=admin_passwd value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;">
+     <input type=password  name=admin_passwd autocomplete="new-password" required value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;">
   </td>
 </tr>
 

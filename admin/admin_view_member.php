@@ -1,4 +1,5 @@
 <?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
 /**************************************************************************
  * 회원 목록 보는 페이지
  *************************************************************************/
@@ -30,7 +31,7 @@
 			if($like) $s_que .= " $keykind like '%".$keyword."%' ";
 			else $s_que .= " $keykind = '$keyword' ";
 		} else {
-			$s_que .= " $keykind = password('$keyword') ";
+			$s_que .= " $keykind = '".get_password($keyword)."' ";
 		}
 			
 		$href.="&keyword=$keyword&keykind=$keykind&like=$like";

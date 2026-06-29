@@ -1,5 +1,8 @@
+<?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
+?>
 <table border=0 cellspacing=0 cellpadding=10 bgcolor=999999 width=100% height=100%>
-<form name=showdb>
+<form name=showdb autocomplete="off">
 <tr>
 	<td valign=top>
 	<br>

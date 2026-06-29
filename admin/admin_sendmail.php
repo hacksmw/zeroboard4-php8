@@ -1,4 +1,5 @@
 <?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
 	if(!isset($s_que)) $s_que='';
 	if($cart) {
 		$temp=explode("||",$cart);

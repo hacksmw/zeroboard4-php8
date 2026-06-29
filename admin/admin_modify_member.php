@@ -1,4 +1,5 @@
 <?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
   $group_data=mysql_fetch_array(zb_query("select * from $group_table where no='$group_no'"));
 
   $member_data=mysql_fetch_array(zb_query("select * from $member_table where no='$no'"));
@@ -67,7 +68,7 @@
 <table border=0 cellspacing=1 cellpadding=3 width=100% bgcolor=#b0b0b0>
   <tr height=30><td bgcolor=#3d3d3d colspan=2><img src=images/admin_webboard.gif></td></tr>
   <tr height=1><td bgcolor=#000000 style=padding:0px; colspan=2><img src=images/t.gif height=1></td></tr>
-<form name=write method=post action=<?=$PHP_SELF?> enctype=multipart/form-data onsubmit="return check_submit();">
+<form autocomplete="off" name=write method=post action=<?=$PHP_SELF?> enctype=multipart/form-data onsubmit="return check_submit();">
 <input type=hidden name=exec value=view_member>
 <input type=hidden name=exec2 value=modify_member_ok>
 <input type=hidden name=group_no value=<?=$group_no?>>
@@ -345,7 +346,7 @@ while($board_data_list=mysql_fetch_array($board_list))
   </tr>
 <tr height=22 align=center>
      <td bgcolor=#a0a0a0 align=right style=font-family:Tahoma;font-size:8pt;font-weight:bold;>관리자 비밀번호를 입력해주세요&nbsp;&nbsp;</td>
-	 <td align=left bgcolor=#e0e0e0>&nbsp;<input type=password  name=admin_passwd value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;"></td>
+	 <td align=left bgcolor=#e0e0e0>&nbsp;<input type=password  name=admin_passwd autocomplete="new-password" required value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;"></td>
   </tr>
   <tr height=22 align=center><td colspan=2><input type=submit value='  변경 완료  ' style=font-weight:bold;border-color:#b0b0b0;background-color:#3d3d3d;color:#ffffff;font-size:8pt;font-family:Tahoma;height:23px;>
                                  <input type=button value='  변경 취소  ' style=border-color:#b0b0b0;background-color:#3d3d3d;color:#ffffff;font-size:8pt;font-family:Tahoma;height:23px; onclick=location.href="<?="$PHP_SELF?exec=view_member&group_no=$group_no&page=$page&keyword=$keyword&level_search=$level_search&page_num=$page_num&keykind=$keykind&like=$like"?>">

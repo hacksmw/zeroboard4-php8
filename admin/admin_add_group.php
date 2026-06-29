@@ -1,3 +1,6 @@
+<?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
+?>
 <script>
 function check_submit() {
 	if(!write.name.value) {
@@ -9,7 +12,7 @@ return true;
 }
 </script>
 <table border=0 cellspacing=1 cellpadding=3 width=100% bgcolor=#b0b0b0>
-<form name=write method=post action=<?=$PHP_SELF?> enctype=multipart/form-data onsubmit="return check_submit();">
+<form name=write method=post action=<?=$PHP_SELF?> enctype=multipart/form-data onsubmit="return check_submit();" autocomplete="off">
 <input type=hidden name=exec value=add_group_ok>
 <input type=hidden name=csrf_token value=<?=generate_csrf_token()?>>
 
@@ -54,7 +57,7 @@ return true;
 <tr height=25 bgcolor=#e0e0e0>
   <td  align=right style=font-family:Tahoma;font-size:8pt;><b>관리자 암호를 입력해주세요.&nbsp;</td>
   <td >&nbsp;&nbsp;
-     <input type=password  name=admin_passwd value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;">
+     <input type=password  name=admin_passwd autocomplete="new-password" required value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;">
   </td>
 </tr>
 

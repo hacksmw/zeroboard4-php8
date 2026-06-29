@@ -1,4 +1,5 @@
 <?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
   $data=mysql_fetch_array(zb_query("select * from $group_table where no='$group_no'"));
   $check_open[$data['is_open']]="checked";
   $check_join[$data['use_join']]="checked";
@@ -15,7 +16,7 @@
   <tr height=30><td bgcolor=#3d3d3d colspan=2><img src=images/admin_deletegroup.gif></td></tr>
   <tr height=1><td bgcolor=#000000 style=padding:0px; colspan=2><img src=images/t.gif height=1></td></tr>
 
-<form name=write method=post action=<?=$PHP_SELF?> enctype=multipart/form-data onsubmit="return confirm('삭제하시겠습니까?')">
+<form autocomplete="off" name=write method=post action=<?=$PHP_SELF?> enctype=multipart/form-data onsubmit="return confirm('삭제하시겠습니까?')">
 <input type=hidden name=exec value=del_group_ok>
 <input type=hidden name=group_no value=<?=$group_no?>>
 <input type=hidden name=csrf_token value=<?=generate_csrf_token()?>>
@@ -38,7 +39,7 @@
   </tr>
   <tr align=right>
     <td style=font-family:Tahoma;font-size:8pt;>관리자 비밀번호를 입력해주세요 : &nbsp;</td>
-    <td align=left>&nbsp;<input type=password  name=admin_passwd value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;"></td>
+    <td align=left>&nbsp;<input type=password  name=admin_passwd autocomplete="new-password" required value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;"></td>
   </tr>
   <tr align=center><td colspan=2 bgcolor=#e0e0e0><br><input type=submit value=' 그룹 삭제 ' style='border-color:#b0b0b0;background-color:#3d3d3d;color:#ffffff;font-size:8pt;font-family:Tahoma;height:20px;font-weight:bold;color=#ff5555'> <input type=button value= ' 취소 ' onclick=history.back() style=border-color:#b0b0b0;background-color:#3d3d3d;color:#ffffff;font-size:8pt;font-family:Tahoma;height:20px;><br><br></td></tr>
   </form>

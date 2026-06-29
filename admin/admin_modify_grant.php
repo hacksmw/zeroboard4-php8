@@ -1,4 +1,5 @@
 <?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
 	$group_data=mysql_fetch_array(zb_query("select * from $group_table where no='$group_no'"));
 
 	if($member['is_admin']>2&&!eregi($no.",",$member['board_name'])) error("사용 권한이 없습니다");
@@ -13,7 +14,7 @@
     <input type=button value='카테고리 관리' class=input style=width=100px onclick=location.href="<?=$PHP_SELF?>?exec=view_board&group_no=<?=$group_no?>&exec2=category&no=<?=$no?>&page=<?=$page?>&page_num=<?=$page_num?>">&nbsp;&nbsp;&nbsp;
 </td></tr>
   <tr height=1><td bgcolor=#000000 style=padding:0px; colspan=10><img src=images/t.gif height=1></td></tr>
-<form method=post action=<?=$PHP_SELF?>>
+<form autocomplete="off" method=post action=<?=$PHP_SELF?>>
 <input type=hidden name=exec value=<?=$exec?>>
 <input type=hidden name=group_no value=<?=$group_no?>>
 <input type=hidden name=exec2 value=modify_grant_ok>
@@ -165,7 +166,7 @@
 <tr height=25 bgcolor=#e0e0e0>
   <td  align=right style=font-family:Tahoma;font-size:8pt;font-weight:bold;><b>관리자 암호 입력 &nbsp;</td>
   <td >&nbsp;&nbsp;
-     <input type=password  name=admin_passwd value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;">
+     <input type=password  name=admin_passwd autocomplete="new-password" required value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;">
   </td>
 </tr>
 

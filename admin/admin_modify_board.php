@@ -1,4 +1,5 @@
 <?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
 /***************************************************************************
  * 게시판 기본 기능 수정 페이지
  **************************************************************************/
@@ -43,7 +44,7 @@
 
     &nbsp;&nbsp;&nbsp;</td></tr>
 <tr height=1><td bgcolor=#000000 style=padding:0px; colspan=10><img src=images/t.gif height=1></td></tr>
-<form method=post action=<?=$PHP_SELF?> name=write onsubmit="return check_submit();">
+<form autocomplete="off" method=post action=<?=$PHP_SELF?> name=write onsubmit="return check_submit();">
 <input type=hidden name=no value=<?php echo $data['no'];?>>
 <input type=hidden name=exec value=view_board>
 <input type=hidden name=exec2 value=<?php if($no) echo"modify_ok"; else echo"add_ok";?>>
@@ -397,7 +398,7 @@ function check2()
 <tr height=25 bgcolor=#e0e0e0>
   <td align=right style=font-family:Tahoma;font-size:8pt;><b>관리자 암호 입력&nbsp;</td>
   <td >&nbsp;&nbsp;
-     <input type=password  name=admin_passwd value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;">
+     <input type=password  name=admin_passwd autocomplete="new-password" required value='' size=40 maxlength=255 class=input style="border: 2px solid #ff0000;">
   </td>
 </tr>
 

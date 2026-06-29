@@ -1,4 +1,5 @@
 <?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
   $group_data=mysql_fetch_array(zb_query("select * from $group_table where no='$group_no'"));
 
   if($member['is_admin']>2&&!eregi($no.",",$member['board_name'])) error("사용 권한이 없습니다");
@@ -18,7 +19,7 @@
 &nbsp;&nbsp;&nbsp;
 </td></tr>
   <tr height=1><td bgcolor=#000000 style=padding:0px; colspan=5><img src=images/t.gif height=1></td></tr>
-<form method=post action=<?=$PHP_SELF?>>
+<form method=post action=<?=$PHP_SELF?> autocomplete="off">
 <input type=hidden name=group_no value=<?=$group_no?>>
 <input type=hidden name=exec value=view_board>
 <input type=hidden name=exec2 value=category_move>
@@ -72,7 +73,7 @@
 </form>
 </tr>
 </table>
-<form method=post action=<?=$PHP_SELF?>>
+<form method=post action=<?=$PHP_SELF?> autocomplete="off">
 <input type=hidden name=group_no value=<?=$group_no?>>
 <input type=hidden name=exec value=view_board>
 <input type=hidden name=exec2 value=category_add>

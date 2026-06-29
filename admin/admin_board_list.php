@@ -1,4 +1,6 @@
 <?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
+
 	// 현재 그룹의 데이타를 구함
 	$group_data=mysql_fetch_array(zb_query("select * from $group_table where no='$group_no'"));
 
@@ -89,7 +91,7 @@ while($data=mysql_fetch_array($result))
 <div align=right>
 <!-- 각종 검색부분 -->
 <table border=0 cellspacing=0 cellpadding=3>
-<form method=post action=<?=$PHP_SELF?> name=search>
+<form method=post action=<?=$PHP_SELF?> name=search autocomplete="off">
 <input type=hidden name=page value=<?=$page?>>
 <input type=hidden name=exec value=<?=$exec?>>
 <input type=hidden name=group_no value=<?=$group_no?>>

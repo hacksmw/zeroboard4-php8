@@ -1,4 +1,5 @@
 <?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
 	if(isset($_POST['exec'])&&$_POST['exec']=="uninstall"&&$_POST['uninstall']=="ok") {
 		if(!$u_hostname) Error("Hostname을 입력하세요");
 		if(!$u_userid) Error("User ID를 입력하세요");

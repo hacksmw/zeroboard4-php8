@@ -1,22 +1,19 @@
 <?php
-	include "lib.php";
+require_once "lib.php";
 
-	// 웹마스터 E-mail
-	$_from = $_zbDefaultSetup['email'];
+// 웹마스터 E-mail
+$_from = $_zbDefaultSetup['email'];
 
-	// 사이트 주소
-	$_homepage = $_zbDefaultSetup['url'];
+// 사이트 주소
+$_homepage = $_zbDefaultSetup['url'];
 
-	// 사이트 이름
-	$_sitename = $_zbDefaultSetup['sitename'];
+// 사이트 이름
+$_sitename = $_zbDefaultSetup['sitename'];
 
-	if(!$_from||!$_homepage||!$_sitename) error("관리자 정보가 입력되어 있지 않습니다.<br>setup.php 파일을 관리자가 수정하여야 합니다");
+if(!$_from||!$_homepage||!$_sitename) error("관리자 정보가 입력되어 있지 않습니다.<br>setup.php 파일을 관리자가 수정하여야 합니다");
 
-	head();
+head();
 ?>
-
-<div align=center>
-
 <script>
 function check_submit()
 {
@@ -26,10 +23,15 @@ function check_submit()
  return confirm("ID/Password를 E-Mail로 받아보시겠습니까?");
 }
 </script>
+
+<div align=center>
+
 <form method=post action=lostid_search.php onsubmit="return check_submit()" name=lostid>
+
 <table border=0 cellpadding=3>
 <tr>
 	<td>
+	
 	<table border=0 cellspacing=0 cellpadding=0 width=100% bgcolor=white>
 	<tr>
 		<td><img src=images/lo_title.gif borrder=0 height=32></td>
@@ -37,8 +39,11 @@ function check_submit()
 		<td><img src=images/lo_right.gif height=32 border=0></td>
 	</tr>
 	</table>
+	
 	<table border=0 cellspacing=0 cellpadding=0 width=100% bgcolor=white>
+	<colgroup>
 	<col width=7></col><col width=></col><col width=7>
+	</colgroup>
 	<tr> 
 		<td><img src=images/t.gif border=0 width=7></td>
 		<td>
@@ -50,25 +55,29 @@ function check_submit()
 					<img src=images/t.gif border=0 height=4><br>
 					<center>
 					<img src=images/lo_email.gif border=0 align=absmiddle>&nbsp;<input type=text name=email size=17 class=input><br>
-					<img src=images/lo_jumin.gif border=0 align=absmiddle>&nbsp;<input type=text name=jumin1 size=6 class=input maxlength=6> - <input type=password name=jumin2 size=7 class=input maxlength=7></td>
+					<img src=images/lo_jumin.gif border=0 align=absmiddle>&nbsp;<input type=text name=jumin1 size=6 class=input maxlength=6> - <input type=password name=jumin2 size=7 class=input maxlength=7>
+					</center>
+				</td>
 			</tr>
 			<tr>
 				<td colspan=2 align=right>
 					<input type=image src=images/lo_ok.gif border=0>
-					<a href=# onclick=window.close()><img src=images/lo_close.gif border=0>
+					<a href=# onclick=window.close()><img src=images/lo_close.gif border=0></a>
 				</td>
 			</tr>
 			</table>
 		</td>
 		<td><img src=images/t.gif border=0 width=7></td>
 	</tr>
-</form>
 	</table>
+	
 	</td>
 </tr>
 </table>
+
+</form>
 <img src=images/t.gif border=0 height=5><br>
+</div>
 <?php
-	if(isset($connect)) mysql_close($connect);
 	foot();
-?>
+

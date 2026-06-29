@@ -2,16 +2,21 @@
 /***************************************************************************
  * 관리자 페이지
  **************************************************************************/
+require_once "lib.php";
 
-	include "lib.php";
+// CSRF 방지
+if(!eregi($HTTP_HOST,$HTTP_REFERER)) Error("관리자 페이지를 이용해 접근하여 주십시오.");
+if(!(eregi("admin.php",$HTTP_REFERER) || eregi("admin_setup.php", $HTTP_REFERER))) Error("관리자 페이지를 이용해 접근하여 주십시오.");
 
-	$connect=dbConn();
 
-	$member=member_info();
+$connect=dbConn();
 
-	if(!isset($member['no'])) Error("로그인후 사용하여주십시요","admin.php");
-	
-	if($member['is_admin']>=3&&!$member['board_name']) Error("관리자페이지를 사용할수 있는 권한이 없습니다","admin.php");
+$member=member_info();
+
+if(!isset($member['no'])) error("로그인후 사용하여 주십시요","admin.php");
+
+if ($member['is_admin'] >= 3 && !$member['board_name']) error("관리자 페이지를 사용할수 있는 권한이 없습니다","admin.php");
+
 	$zb_hash_chk = md5($member['reg_m_date'].$member['user_id'].$member['no'].$_SERVER['REMOTE_ADDR'].$_SERVER['HTTP_USER_AGENT']);
 	if($_SESSION['zb_hash'] != $zb_hash_chk) {
 		session_destroy();

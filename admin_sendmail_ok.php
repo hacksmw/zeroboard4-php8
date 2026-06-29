@@ -1,26 +1,57 @@
 <?php
-	include "lib.php";
-	$connect=dbConn();
+require_once "lib.php";
 
-	set_time_limit(0);
+$connect=dbConn();
 
-	function thisError($message) {
-		print("<script>\nalert('$message');\nwindow.close();\n</script>\n");
-		exit();
-	}
+@set_time_limit(0);
 
-	$member=member_info();
-	if(!$member['no']) thisError("로그인후 사용하여주십시요");
+function thisError($message) {
+?>
+<html>
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+<script>
+alert('<?=$message?>');
+window.close();
+</script>
+</body>
+</html>
+<?php
+	exit();
+}
 
-	if($member['is_admin']>3||$member['is_admin']<1) thisError("관리자페이지를 사용할수 있는 권한이 없습니다");
+$member = member_info();
 
-	if($s_comment) $comment = $s_comment;
-	else $s_comment = $comment;
+if(!$member['no']) thisError("로그인후 사용하여 주십시요");
 
-	if(isblank($from)) thisError("보내는 이의 mail을 적어주십시요");
-	if(isblank($name)) thisError("보내시는 분의 이름을 적어주십시요");
-	if(isblank($subject)) thisError("제목을 적어주십시요");
-	if(isblank($comment)) thisError("내용을 적어주십시요");
+if($member['is_admin'] > 3 || $member['is_admin'] < 1) {
+	thisError("관리자 페이지를 사용할수 있는 권한이 없습니다");
+}
+
+/*
+$s_comment = $_REQUEST["s_comment"];
+$comment = $_REQUEST["comment"];
+*/
+
+if ($s_comment) {
+	$comment = $s_comment;
+} else {
+	$s_comment = $comment;	
+}
+
+/*
+$from = $_REQUEST["from"];
+$name = $_REQUEST["name"];
+$subject = $_REQUEST["subject"];
+$comment = $_REQUEST["comment"];
+*/
+
+if (isblank($from)) thisError("보내는 이의 mail을 적어주십시요");
+if (isblank($name)) thisError("보내시는 분의 이름을 적어주십시요");
+if (isblank($subject)) thisError("제목을 적어주십시요");
+if (isblank($comment)) thisError("내용을 적어주십시요");
 
 	// 페이지 이동 할때 페이지를 구함
 	if(!$page) $page = 1; else $page++;

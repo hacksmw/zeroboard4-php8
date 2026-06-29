@@ -2,136 +2,163 @@
 /***************************************************************************
  * 회원마다 업로드된 이미지를 보여주는 페이지
  **************************************************************************/
-	include_once "_head.php";
+require "_head.php";
 
-	if(!isset($id)) die("<Script>\nalert('게시판 이름을 입력하셔야 합니다');\nwindow.close();\n</Script>");
+unset($image_size);
 
-	$setup['header']="";
-	$setup['footer']="";
-	$setup['header_url']="";
-	$setup['footer_url']="";
-	$group['header']="";
-	$group['footer']="";
-	$group['header_url']="";
-	$group['footer_url']="";
-	$setup['skinname']="";
+$no = req("no");
 
-	if(!$member['no']) error("회원만 <br>사용가능합니다","window.close");
-	if($setup['grant_write']<$member['level']&&!$is_admin) Error("사용 권한이 없습니다","window.close");
-	if($setup['grant_imagebox']<$member['level']) Error("사용 권한이 없습니다","window.close");
+if ($no && !is_numeric($no)) {
+	error("번호가 잘못되었습니다.");
+}
+
+$image_page = req("image_page");
+if ($image_page && !is_numeric($image_page)) {
+	error("번호가 잘못되었습니다.");
+}
+
+if(!$id) die("<script>\nalert('게시판 이름을 입력하셔야 합니다');\nwindow.close();\n</script>");
+
+$setup['header']="";
+$setup['footer']="";
+$setup['header_url']="";
+$setup['footer_url']="";
+$group['header']="";
+$group['footer']="";
+$group['header_url']="";
+$group['footer_url']="";
+$setup['skinname']="";
+
+if(!$member['no']) error("회원만 <br>사용가능합니다","window.close");
+if($setup['grant_write']<$member['level']&&!$is_admin) Error("사용 권한이 없습니다","window.close");
+if($setup['grant_imagebox']<$member['level']) Error("사용 권한이 없습니다","window.close");
 
 // icon 디렉토리에 member_image_box 디렉토리가 없을경우 디렉토리 생성
-	$path = "icon/member_image_box";
-	if(!is_dir($path)) {
-		@mkdir($path,0707);
-		@chmod($path,0707);
-	}
+$path = "icon/member_image_box";
+if(!is_dir($path)) {
+	@mkdir($path,0707);
+	@chmod($path,0707);
+}
 
 // 회원의 Path 지정
-	$path .="/".$member['no'];
+$path .="/".$member['no'];
 
 // 회원의 디렉토리가 생성이 안되어 있으면 생성
-	if(!is_dir($path)) {
-		@mkdir($path,0707);
-		@chmod($path,0707);
-	}
+if(!is_dir($path)) {
+	@mkdir($path,0707);
+	@chmod($path,0707);
+}
+
+unset($image_list);
+unset($image_list_time);
 
 // 회원의 이미지 창고 전체 용량 계산하기
-	$d = dir($path);
-	while($entry = $d->read()) {
-		if ($entry != "." && $entry != "..") {
-			$image_list[] = $entry;
-			$image_list_time[] = filemtime($path."/".$entry);
-		}
+$d = dir($path);
+while($entry = $d->read()) {
+	if ($entry != "." && $entry != "..") {
+		$image_list[] = $entry;
+		$image_list_time[] = filemtime($path."/".$entry);
 	}
+}
 
-    if (isset($image_list_time) && isset($image_list)){
-	    @array_multisort ($image_list_time, SORT_DESC, SORT_NUMERIC,
-                         $image_list, SORT_STRING, SORT_DESC);
-    }
-	
-	$dirSize = 0;
-	if(!isset($image_list)) $image_list = array();
-	for($i=0;$i<count($image_list);$i++) $dirSize += filesize($path."/".$image_list[$i]); 
+if (isset($image_list_time) && isset($image_list)){
+	@array_multisort ($image_list_time, SORT_DESC, SORT_NUMERIC,
+		$image_list, SORT_STRING, SORT_DESC);
+}
+
+$dirSize = 0;
+if(!isset($image_list)) $image_list = array();
+for($i=0;$i<count($image_list);$i++) $dirSize += filesize($path."/".$image_list[$i]); 
 
 // 회원의 허용 용량 구하기
-	$maxDirSize = zReadFile($path."_maxsize.php");
-	if(!$maxDirSize) {
-		// 기본으로 10kb 의 용량을 제공
-		$maxDirSize = 100*1024; 
-	} else {
-		// 파일의 주석처리 제거
-		$maxDirSize = str_replace("<?php /*","",$maxDirSize);
-		$maxDirSize = str_replace("*/?>","",$maxDirSize);
-	}
+$maxDirSize = zReadFile($path."_maxsize.php");
+if(!$maxDirSize) {
+	// 기본으로 10kb 의 용량을 제공
+	$maxDirSize = 1000*1024; 
+} else {
+	// 파일의 주석처리 제거
+	$maxDirSize = str_replace("<?php /*","",$maxDirSize);
+	$maxDirSize = str_replace("*/?>","",$maxDirSize);
+}
+
+$exec = req("exec");
 
 // 입력된 이미지가 있으면 upload 시킴
-	if(isset($exec) && $exec=="upload") {
-		if(!eregi($HTTP_HOST,$HTTP_REFERER)) Error("정상적으로 업로드를 하여 주시기 바랍니다.","window.close");
-		if(!eregi("image_box.php",$HTTP_REFERER)) Error("정상적으로 업로드를 하여 주시기 바랍니다.","window.close");
-		if(getenv("REQUEST_METHOD") == 'GET' ) Error("정상적으로 업로드를 하여 주시기 바랍니다","window.close");
-
-		$num = (int)count($_FILES['upload']['name']);
-		for($i=0;$i<$num;$i++) {
-			$upload[$i] = $_FILES['upload']['tmp_name'][$i];
-			$upload_name[$i]  = $_FILES['upload']['name'][$i];
-			$upload_size[$i]  = $_FILES['upload']['size'][$i];
-			$upload_type[$i]  = $_FILES['upload']['type'][$i];
-
-			if($upload_name[$i]) {
-
-				if(file_exists($path."/".$upload_name[$i])) Error("같은 이름의 파일이 존재합니다.<br>다른 이름으로 입력하여 주시기 바랍니다");
-
-				$filesize = filesize($upload[$i]);
+if($exec=="upload") {
+	if(!eregi($HTTP_HOST,$HTTP_REFERER)) Error("정상적으로 업로드를 하여 주시기 바랍니다.","window.close");
+	if(!eregi("image_box.php",$HTTP_REFERER)) Error("정상적으로 업로드를 하여 주시기 바랍니다.","window.close");
+	if(getenv("REQUEST_METHOD") == 'GET' ) Error("정상적으로 업로드를 하여 주시기 바랍니다","window.close");
 	
-				// 업로드 용량 체크
-				if($maxDirSize < $filesize + $dirSize) Error("이미지 창고 사용 용량을 초과하였습니다.");
+	$upload = array();
+	$upload_name = array();
+	$upload_size = array();
+	$upload_type = array();
 
-				if($filesize) {
-					if(!is_uploaded_file($upload[$i])) Error("정상적인 방법으로 업로드 해주세요","window.close");
-					if(!eregi("\.gif\$",$upload_name[$i])&&!eregi("\.jpg\$",$upload_name[$i])&&!eregi("\.jpeg\$",$upload_name[$i])&&!eregi("\.png\$",$upload_name[$i])) Error("이미지는 gif, png 또는 jpg 파일을 올려주세요");
-					$size=GetImageSize($upload[$i]);
-					if(!$size[2]) Error("이미지 파일을 올려주시기 바랍니다");
-					if(!@move_uploaded_file($upload[$i] , $path."/".$upload_name[$i])) Error("이미지 업로드가 제대로 되지 않았습니다");
-				}
+	$num = (int)count($_FILES['upload']['name']);
+	for($i=0;$i<$num;$i++) {
+		$upload[$i] = $_FILES['upload']['tmp_name'][$i];
+		$upload_name[$i]  = $_FILES['upload']['name'][$i];
+		$upload_size[$i]  = $_FILES['upload']['size'][$i];
+		$upload_type[$i]  = $_FILES['upload']['type'][$i];
 
+		if($upload_name[$i]) {
+
+			if(file_exists($path."/".$upload_name[$i])) Error("같은 이름의 파일이 존재합니다.<br>다른 이름으로 입력하여 주시기 바랍니다");
+			
+			if (!ctype_alnum(str_replace('.', '', str_replace('_', '', $upload_name[$i])))) {
+				//Error("이미지 파일명은 알파벳, 숫자, 언더스코어(_)만 가능합니다.");
+			}
+
+			$filesize = filesize($upload[$i]);
+	
+			// 업로드 용량 체크
+			if($maxDirSize < $filesize + $dirSize) Error("이미지 창고 사용 용량을 초과하였습니다.");
+
+			if($filesize) {
+				if(!is_uploaded_file($upload[$i])) Error("정상적인 방법으로 업로드 해주세요","window.close");
+				if(!eregi("\.gif\$",$upload_name[$i])&&!eregi("\.jpg\$",$upload_name[$i])&&!eregi("\.jpeg\$",$upload_name[$i])&&!eregi("\.png\$",$upload_name[$i])) Error("이미지는 gif, png 또는 jpg 파일을 올려주세요");
+				$size=GetImageSize($upload[$i]);
+				if(!$size[2]) Error("이미지 파일을 올려주시기 바랍니다");
+				if(!@move_uploaded_file($upload[$i] , $path."/".$upload_name[$i])) Error("이미지 업로드가 제대로 되지 않았습니다");
 			}
 
 		}
 
-		movepage("$PHP_SELF?id=$id&image_page=$image_page");
-		exit();
 	}
+
+	movepage("$PHP_SELF?id=".urlencode($id)."&image_page=".urlencode($image_page));
+	exit();
+}
 
 // 삭제 명령 실행시
-	if(isset($exec) && $exec=="delete"&&strlen($no)&&$id) {
-		if(!z_unlink($path."/".$image_list[$no])) die("에러"); 
-		movepage("$PHP_SELF?id=$id&image_page=$image_page");
-		exit();
-	}
+if($exec=="delete"&&strlen($no)&&$id) {
+	if(!z_unlink($path."/".$image_list[$no])) die("에러"); 
+	movepage("$PHP_SELF?id=".urlencode($id)."&image_page=".urlencode($image_page));
+	exit();
+}
 
 // 한페이지에 출력될 그림 갯수 지정
-	$listnum = 18;
+$listnum = 10;
 
 // 전체갯수와 전체 페이지 수 구함
-	$total = count($image_list);
-	$total_page=(int)(($total-1)/$listnum)+1; // 전체 페이지 구함
+$total = count($image_list);
+$total_page=(int)(($total-1)/$listnum)+1; // 전체 페이지 구함
 
 // 페이지 지정
-	if(empty($image_page)) $image_page = 1;
+if(empty($image_page)) $image_page = 1;
 
 // 페이지가 전체 페이지보다 크면 페이지 번호 바꿈
-	if($image_page>$total_page) $image_page=$total_page; 
+if($image_page>$total_page) $image_page=$total_page; 
 
 // 이미지의 출력 크기 지정
-	$x_size = 75;
-	$y_size = 75;
+$x_size = 75;
+$y_size = 75;
 
 // 한 줄에 나올 이미지 수 지정
-	$h_num = 6;
+$h_num = 6;
 
 
-	head();
+head();
 ?>
 
 <script>
@@ -179,7 +206,7 @@ function alignset(str) {
 
 <form method=post action="<?=$PHP_SELF?>" ENCTYPE="multipart/form-data" name=imageList>
 <input type=hidden name=exec value="upload">
-<input type=hidden name=page value="<?=$image_page?>">
+<input type=hidden name=page value="<?=htmlspecialchars($image_page)?>">
 <input type=hidden name=id value="<?=$id?>">
 <input type=hidden name=i_align value="">
 	<img src=images/t.gif border=0 height=10><Br>
@@ -277,11 +304,12 @@ function alignset(str) {
 	<br>
 
 	<table border=0 width=98% cellspacing=0 cellpadding=2>
+	<colgroup>
 <?php
 	$_t_width = (int)(100 / $h_num);
 	for($i=0;$i<$h_num;$i++) echo"<col width=$_t_width"."%></col>";
 ?>
-
+	</colgroup>
 <?php
 	$_x = 1;
 
@@ -423,5 +451,4 @@ function alignset(str) {
 </div>
 
 <?php
-	include "_foot.php";
-?>
+foot();

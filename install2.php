@@ -1,22 +1,9 @@
 <?php
-  require "lib.php";
-  head();
-?>
-<body bgcolor=#000000 text=#ffffff>
-<br><br><br>
-<div align=center>
-<table cellpadding=0 cellspacing=0 width=600 border=0>
-<tr>
-  <td height=30 colspan=3><img src=images/inst_top.gif></td>
-</tr>
-<tr>
-  <td> 
-    <br>
+require_once "lib.php";
 
-  </td>
-</tr>
-</table>
-<!-- 기본 정보 입력받는곳 -->
+head('bgcolor="#000000" text="#ffffff"');
+
+?>
 <script>
  function check_submit()
  {
@@ -55,43 +42,61 @@
   return true;
  }
 </script>
-
-<table border=0 cellpadding=2 cellspacing=0 width=600>
-<form name=write method=post action="install2_ok.php" onsubmit="return check_submit();">
-
+<!-- 기본 정보 입력받는곳 -->
+<div>
+<br><br><br>
+<div align="center">
+<table cellpadding="0" cellspacing="0" width="600" border="0">
 <tr>
-  <td colspan=2>
-  <img src=images/inst_step3.gif>
+  <td height="30"><img src="images/inst_top.gif" alt="제로보드 4.1 설치"></td>
+</tr>
+<tr>
+  <td> 
+    <br>
   </td>
 </tr>
-
-<tr>
-  <td width=150 align=right style=font-family:Tahoma;font-size:8pt>ID&nbsp;</td>
-  <td width=450> <input type=test name=user_id size=20 maxlength=20 style=font-family:Tahoma;font-size:8pt;></td>
-</tr>
-
-<tr>
-  <td  align=right style=font-family:Tahoma;font-size:8pt>Password&nbsp;</td>
-  <td > <input type=password name=password1 size=20 maxlength=20 style=font-family:Tahoma;font-size:8pt></td>
-</tr>
-
-<tr>
-  <td  align=right style=font-family:Tahoma;font-size:8pt>Confirm Password&nbsp;</td>
-  <td > <input type=password name=password2 size=20 maxlength=20 style=font-family:Tahoma;font-size:8pt></td>
-</tr>
-
-<tr>
-  <td  align=right style=font-family:Tahoma;font-size:8pt>Name&nbsp;</td>
-  <td > <input type=text name=name size=20 value='<?php if(isset($data)) echo $data['name'];?>' maxlength=20 style=font-family:Tahoma;font-size:8pt></td>
-</tr>
-
-<tr>
-  <td align=center colspan=2><br>
-<br>      <input type=image src=images/inst_b_3.gif border=0 align=absmiddle>
-  </td>
-</tr>
-</form>
 </table>
+
+
+<form name="write" method="post" action="install2_ok.php" onsubmit="return check_submit();">
+<table border="0" cellpadding="2" cellspacing="0" width="600">
+
+<tr>
+  <td colspan="2">
+  <img src="images/inst_step3.gif" alt="관리자 정보 입력">
+  </td>
+</tr>
+
+<tr>
+  <td width="150" align="right" style="font-family:Tahoma;font-size:8pt">ID&nbsp;</td>
+  <td width="450"> <input type="test" name="user_id" size="20" maxlength="20" style="font-family:Tahoma;font-size:8pt;"></td>
+</tr>
+
+<tr>
+  <td align="right" style="font-family:Tahoma;font-size:8pt">Password&nbsp;</td>
+  <td> <input type="password" name="password1" size="20" maxlength="20" style="font-family:Tahoma;font-size:8pt"></td>
+</tr>
+
+<tr>
+  <td align="right" style="font-family:Tahoma;font-size:8pt">Confirm Password&nbsp;</td>
+  <td> <input type="password" name="password2" size="20" maxlength="20" style="font-family:Tahoma;font-size:8pt"></td>
+</tr>
+
+<tr>
+  <td align="right" style="font-family:Tahoma;font-size:8pt">Name&nbsp;</td>
+  <td> <input type="text" name="name" size="20" value="" maxlength="20" style="font-family:Tahoma;font-size:8pt"></td>
+</tr>
+
+<tr>
+  <td align="center" colspan="2">
+  <br><br>      
+  <input type="image" src="images/inst_b_3.gif" border="0" align="absmiddle" alt="정보 입력 완료">
+  </td>
+</tr>
+
+</table>
+</form>
+</div>
+</div>
 <?php
   foot();
-?>

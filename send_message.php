@@ -1,35 +1,75 @@
 <?php
 // 라이브러리 함수 파일 인크루드
-	include "lib.php";
+require_once "lib.php";
+
+if (strpos(strtolower($HTTP_REFERER),strtolower($HTTP_HOST)) === false) error("잘못된 접근입니다.");
+if (getenv("REQUEST_METHOD") !== 'POST' ) error("잘못된 접근입니다.");
+
+$member_no = req("member_no") ?? '';
+$kind = req("kind") ?? '';
+$subject = req("subject") ?? '';
+$memo = req("memo") ?? '';
+
+if (!is_numeric($member_no)) {
+	error("맴버 번호가 올바르지 않습니다.");
+}
 
 // DB 연결
-	if(!isset($connect)) $connect=dbConn();
+$connect = dbConn();
 
 // 글쓴이의 정보를 갖고옴;;
-	$data=mysql_fetch_array(zb_query("select * from $member_table where no='$member_no'"));
+$data = mysql_fetch_array(zb_query("select * from $member_table where no='$member_no'"));
+
+if ($data === false) {
+	error("맴버 정보가 없습니다.");
+}
 
 // 멤버정보 구하기
-	$member=member_info();
+$member=member_info();
 
-	if(!$member['no']) Error("회원만이 쪽지보내가기 가능합니다","window.close");
+if ($member === false) {
+	error("맴버 정보가 없습니다.");
+}
+
+if (!$member['no']) error("회원만이 쪽지보내기가 가능합니다","window.close");
 
 // 그룹데이타 읽어오기;;
-	$group_data=mysql_fetch_array(zb_query("select * from $group_table where no='$data[group_no]'"));
+$group_data = mysql_fetch_array(zb_query("select * from $group_table where no='$data[group_no]'"));
 
+if ($group_data === false) {
+	error("그룹 정보가 없습니다.");
+}
 
 // 쪽지 보내기일때;;
-	if($kind==1&&$member['no']&&$data['no']) {
-		if(isblank($subject)) Error("제목이 없습니다. 제목을 입력해 주십시오.");
-		if(isblank($memo)) Error("내용이 없습니다. 내용을 입력해 주십시오.");
+if ($kind === "1" && $member['no'] && $data['no']) {
+	if(isblank($subject)) Error("제목이 없습니다. 제목을 입력해 주십시오.");
+	if(isblank($memo)) Error("내용이 없습니다. 내용을 입력해 주십시오.");
+	$subject = addslashes($subject);
+	$memo = addslashes($memo);
+	$reg_date = time();
 
-		$subject=addslashes($subject);
-		$memo=addslashes($memo);
-		$reg_date=time();
-		zb_query("insert into $get_memo_table (member_no,member_from,subject,memo,readed,reg_date) values ('$data[no]','$member[no]','$subject','$memo',1,'$reg_date')") or error(zb_error());
-		zb_query("insert into $send_memo_table (member_to,member_no,subject,memo,readed,reg_date) values ('$data[no]','$member[no]','$subject','$memo',1,'$reg_date')") or error(zb_error());
-		zb_query("update $member_table set new_memo=1 where no='$data[no]'") or error(zb_error());
-		echo"<script language=\"javascript\">alert(\"$data[name] 님께 쪽지를 보냈습니다\");window.close();</script>";
-	}
+	zb_query("insert into $get_memo_table (member_no,member_from,subject,memo,readed,reg_date) values ('$data[no]','$member[no]','$subject','$memo',1,'$reg_date')") or error(zb_error());
+	zb_query("insert into $send_memo_table (member_to,member_no,subject,memo,readed,reg_date) values ('$data[no]','$member[no]','$subject','$memo',1,'$reg_date')") or error(zb_error());
+	zb_query("update $member_table set new_memo=1 where no='$data[no]'") or error(zb_error());
 
-	mysql_close($connect);
+	
 ?>
+<html>
+<head>
+<meta charset="utf-8" />
+<script>
+window.onload = function () {
+	alert(document.getElementById("message").textContent); 
+	history.back();
+	window.close();
+};
+</script>
+</head>
+<body>
+<p id="message" style="display: none">
+<?=htmlspecialchars($data['name'])?>님께 쪽지를 보냈습니다.
+</p>
+</body>
+</html>
+<?php
+}

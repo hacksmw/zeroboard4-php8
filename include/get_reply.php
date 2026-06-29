@@ -1,4 +1,6 @@
 <?php
+	if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
+	
 	if(eregi(":\/\/",$dir)||eregi("\.\.",$dir)) $dir ="./";
 
 	$reply_result=zb_query("select * from $t_board"."_$id where headnum='$data[headnum]' and depth>0 order by arrangenum");
@@ -7,6 +9,4 @@
 		include "include/reply_check.php";
 		include "$dir/list_reply.php";
 	}
-
-?>
 

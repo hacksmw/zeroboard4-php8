@@ -1,7 +1,7 @@
 <?php
 
-	if(isset($_list_check_included)) return;
-	$_list_check_included = true;
+	if(defined("_list_check_included")) return;
+	define("_list_check_included", true);
 
 /*********************************************************************************************
  * 넘겨지는 데이타에 대한 일괄 정리
@@ -15,7 +15,7 @@ function list_check(&$data,$view_check=0) {
 			$upload_image1, $upload_image2, $category_name, $date, $reg_date, $insert, $icon, $face_image,$number,$loop_number,
 			$a_file_link1, $a_file_link2, $a_reply, $a_delete, $a_modify, $zbLayer,  $_zbCheckNum,
 			$_listCheckTime;
-
+		
 	$_listCheckTimeStart = getmicrotime();
 
 	if($view_check) $setup['only_board']=0;
@@ -46,22 +46,20 @@ function list_check(&$data,$view_check=0) {
 		$style_pattern = "/(\<.*?)style=(.*?)(\>?)/i";
 		$data['memo']=preg_replace($style_pattern,"\\1\\3",$data['memo']);
 	}
-	
-
 
 	// ' 등의 특수문자때문에 붙인 \(역슬래쉬)를 떼어낸다
-	$name=$data['name']=stripslashes($data['name']); 
+	$name=$data['name']=htmlspecialchars($data['name']); 
 	$temp_name = get_private_icon($data['ismember'], "2");
 	if($temp_name) $name="<img src='$temp_name' border=0 align=absmiddle>"; 
 
-	$subject=$data['subject']=stripslashes($data['subject']); // 제목
-	$subject=cut_str($subject,$setup['cut_length']); // 제목 자르는 부분
+	$subject=$data['subject']=($data['subject']); // 제목
+	$subject=htmlspecialchars(cut_str($subject,$setup['cut_length'])); // 제목 자르는 부분
 
 	// 검색어에 해당하는 글자를 빨간;; 색으로 바꾸어줌;;
 	if($keyword) {
-		$keyword_pattern = "/".str_replace("\0","\\0",preg_quote($keyword,"/"))."/i";
-		if($sn=="on") $name = preg_replace($keyword_pattern, "<span style='color:#FF001E;background-color:#FFF000;'>$keyword</span>", $name);
-		if($ss=="on") $subject = preg_replace($keyword_pattern, "<span color='FF001E' style='color:#FF001E;background-color:#FFF000;'>$keyword</span>", $subject);
+		$keyword_pattern = "/".str_replace("\0","\\0",preg_quote(htmlspecialchars($keyword),"/"))."/i";
+		if($sn=="on") $name = preg_replace($keyword_pattern, "<span style='color:#FF001E;background-color:#FFF000;'>".htmlspecialchars($keyword)."</span>", $name);
+		if($ss=="on") $subject = preg_replace($keyword_pattern, "<span color='FF001E' style='color:#FF001E;background-color:#FFF000;'>".htmlspecialchars($keyword)."</span>", $subject);
 	}
 
 	$hit=$data['hit'];  // 조회수
@@ -77,16 +75,17 @@ function list_check(&$data,$view_check=0) {
 		$subject="<a href=\"".$view_file."?$href$sort&no=$data[no]\" $addShowComment >".$subject."</a>"; 
 	}
 
-	if(!$setup['only_board']) {
-		$homepage=$data['homepage']=stripslashes($data['homepage']);
+	if(!$setup['only_board']) {	
+		$homepage=$data['homepage']=htmlspecialchars($data['homepage']);
 		if($homepage) $homepage="<a href='$homepage' target=_blank>$homepage</a>";
+
 
 		// 이미지 박스 사용을 위해서 정규표현식 사용
 		if($data['ismember']) {
 			$imageBoxPattern = "/\[img\:(.+?)\.(jpg|gif)\,align\=([a-z]){0,}\,width\=([0-9]+)\,height\=([0-9]+)\,vspace\=([0-9]+)\,hspace\=([0-9]+)\,border\=([0-9]+)\]/i";
-			$data['memo']=preg_replace($imageBoxPattern,"<img src='icon/member_image_box/$data[ismember]/\\1.\\2' align='\\3' width='\\4' height='\\5' vspace='\\6' hspace='\\7' border='\\8'>", stripslashes($data['memo']));
+			$data['memo']=preg_replace($imageBoxPattern,"<img src='icon/member_image_box/$data[ismember]/\\1.\\2' align='\\3' width='\\4' height='\\5' vspace='\\6' hspace='\\7' border='\\8'>", xss2($data['memo']));
 		} else {
-			$data['memo']=stripslashes($data['memo']); 
+			$data['memo']=xss2($data['memo']); 
 		}
 
 		if($data['use_html']<2) $memo=$data['memo']=nl2br($data['memo']);
@@ -99,22 +98,24 @@ function list_check(&$data,$view_check=0) {
 
 		// 검색어가 있을경우 내용의 키워드를 변경
 		if($sc=="on" && $keyword) {
-			$keyword_pattern = "/".str_replace("\0","\\0",preg_quote($keyword,"/"))."/i";
-			$memo = preg_replace($keyword_pattern, "<span style='color:#FF001E;background-color:#FFF000;'>$keyword</span>", $memo);
+			$keyword_pattern = "/".str_replace("\0","\\0",preg_quote(htmlspecialchars($keyword),"/"))."/i";
+			$memo = preg_replace($keyword_pattern, "<span style='color:#FF001E;background-color:#FFF000;'>".htmlspecialchars($keyword)."</span>", $memo);
 		}
 
 		// 이미지 리사이즈를 위해서 처리하는 부분
 		$memo = preg_replace("/(\<img)(.*)(\>?)/i","\\1 name=zb_target_resize style=\"cursor:hand\" onclick=window.open(this.src) \\2 \\3", $memo);
-		$memo = "<table border=0 cellspacing=0 cellpadding=0 width=100% style=\"table-layout:fixed;\"><col width=100%></col><tr><td valign=top>".$memo."</table>";
+		$memo = "<table border=0 cellspacing=0 cellpadding=0 width=100% style=\"table-layout:fixed;\"><colgroup><col width=100%></col></colgroup><tr><td valign=top>".$memo."</table>";
 		$_zbResizeCheck = true;
 
 		// 아이피
 		if($is_admin) $ip="IP Address : ".$data['ip']."&nbsp;";  
 
-		$sitelink1=$data["sitelink1"]=stripslashes($data["sitelink1"]);
-		$sitelink2=$data["sitelink2"]=stripslashes($data["sitelink2"]);
+		$sitelink1=$data["sitelink1"]=htmlspecialchars($data["sitelink1"]);
+		$sitelink2=$data["sitelink2"]=htmlspecialchars($data["sitelink2"]);
 		if($sitelink1)$sitelink1="<a href='$sitelink1' target=_blank>$sitelink1</a>";
 		if($sitelink2)$sitelink2="<a href='$sitelink2' target=_blank>$sitelink2</a>";
+		
+		
 		$file_name1=$data["s_file_name1"];
 		$file_name2=$data["s_file_name2"];
 		$file_download1=$data["download1"];
@@ -136,8 +137,9 @@ function list_check(&$data,$view_check=0) {
   
 		$upload_image1=$upload_image2="";
 
-		if(preg_match("/\.(gif|jpe?g|png|bmp)$/i",$file_name1)) $upload_image1="<img src=$data[file_name1] border=0 name=zb_target_resize style=\"cursor:hand\" onclick=window.open(this.src)><br>";
-		if(preg_match("/\.(gif|jpe?g|png|bmp)$/i",$file_name2)) $upload_image2="<img src=$data[file_name2] border=0 name=zb_target_resize style=\"cursor:hand\" onclick=window.open(this.src)><br>";
+		if(preg_match("/\.(gif|jpe?g|png|bmp)$/i",$file_name1)) $upload_image1="<img src=".htmlspecialchars($data['file_name1'])." border=0 name=zb_target_resize style=\"cursor:hand\" onclick=window.open(this.src)><br>";
+		if(preg_match("/\.(gif|jpe?g|png|bmp)$/i",$file_name2)) $upload_image2="<img src=".htmlspecialchars($data['file_name2'])." border=0 name=zb_target_resize style=\"cursor:hand\" onclick=window.open(this.src)><br>";
+			
 	}
 
 	// 카테고리의 이름을 구함
@@ -166,11 +168,15 @@ function list_check(&$data,$view_check=0) {
 
 	// 이름앞에 붙는 아이콘 정의;;
 	$face_image=get_face($data);
+	
+	if (isset($loop_number)) {
+		$loop_number = (int)$loop_number;
+	}
 
 	$number=$loop_number;
-
+		
 	// 바로 전에 본 글인 경우 번호를 아이콘으로 바꿈
-	if($prev_no==$data['no']) $number="<img src=$dir/arrow.gif border=0 align=absmiddle>"; elseif($number!="&nbsp;") $number=$loop_number;
+	if(isset($prev_no) && $prev_no==$data['no']) $number="<img src=$dir/arrow.gif border=0 align=absmiddle>"; elseif($number!="&nbsp;") $number=$loop_number;
 
 	// 답글 버튼
 	if(($is_admin||$member['level']<=$setup['grant_reply'])&&$data['headnum']>-2000000000&&$data['headnum']!=-1) $a_reply="<a href='write.php?$href$sort&no=$data[no]&mode=reply'>"; 
@@ -190,4 +196,3 @@ function list_check(&$data,$view_check=0) {
 
 	$_listCheckTime += getmicrotime() - $_listCheckTimeStart;
 }
-?>

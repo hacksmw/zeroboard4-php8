@@ -1,4 +1,6 @@
-
+<?php
+if(realpath($_SERVER['SCRIPT_FILENAME']) == realpath(__FILE__)) exit;
+?>
 <script>
 function check_submit()
 {
